@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction Lab · PlaceScope{% endblock %}
+{% block page_title %}Prediction Lab{% endblock %}
+
+{% block content %}
+
+<section style="margin-bottom:20px;">
+   <span class="kicker">Live scoring · leakage-free model</span>
+   <h1 style="font-size:clamp(1.6rem,3vw,2.2rem);margin:9px 0 8px;">
+      Score a student <span class="grad-text">profile</span>
+   </h1>
+   <p style="color:var(--muted);max-width:74ch;font-size:.94rem;">
+      Fill in what you know — blanks are fine, the pipeline fills them with the training median.
+      Every score comes from the deployment model: a Random Forest retrained
+      <b>without</b> the leaking column, scoring {{ "%.2f"|format(deploy.accuracy * 100) }}% accuracy
+      and {{ "%.2f"|format(deploy.f1 * 100) }}% F1 on 10,000 held-out students.
+   </p>
+</section>
+
+<div class="pred-grid">
+
+   <!-- ==================== FORM ==================== -->
+   <form method="post" action="{{ url_for('prediction') }}">
+
+      {% for group in field_groups %}
+      <div class="panel form-panel reveal">
+         <div class="panel-head">
+            <span class="ph-icon">{{ group.icon }}</span>
+            <div>
+               <h3>{{ group.title }}</h3>
+               <p>{{ group.blurb }}</p>
+            </div>
+         </div>
+         <div class="panel-body">
+            <div class="fgrid">
+               {% for f in group.fields %}
+               <div class="fld">
+                  <label for="{{ f.name }}">{{ f.label }}</label>
+
+                  {% if f.type == 'select' %}
+                  <select id="{{ f.name }}" name="{{ f.name }}">
+                     {% for opt in f.options %}
+                     <option value="{{ opt }}" {{ 'selected' if form[f.name] == opt }}>{{ opt }}</option>
+                     {% endfor %}
+                  </select>
+                  {% else %}
+                  <input id="{{ f.name }}" type="number" name="{{ f.name }}"
+                         min="{{ f.min }}" max="{{ f.max }}" step="{{ f.step }}"
+                         value="{{ form[f.name] }}" placeholder="{{ f.placeholder }}">
+                  {% endif %}
+
+                  {% if f.hint %}<span class="fhint">{{ f.hint }}</span>{% endif %}
+               </div>
+               {% endfor %}
+            </div>
+         </div>
+      </div>
+      {% endfor %}
+
+      <div class="panel reveal">
+         <div class="form-actions">
+            <button type="submit" class="btn primary block">◎ Score this student</button>
+            <span style="font-size:.72rem;color:var(--faint);text-align:center;line-height:1.5;">
+               Median imputer + most-frequent imputer + one-hot encoder live inside the model —
+               the raw dataset is never modified.
+            </span>
+         </div>
+      </div>
+
+   </form>
+
+   <!-- ==================== SIDE PANEL ==================== -->
+   <div class="side-stack">
+
+      {% if error %}
+      <div class="panel reveal">
+         <div class="panel-body" style="color:#A32020;font-size:.85rem;">
+            <b>⚠ Could not score that profile</b><br>{{ error }}
+         </div>
+      </div>
+      {% endif %}
+
+      {% if result %}
+      <div class="panel result-panel {{ 'positive' if result.placed else 'negative' }} reveal">
+         <div class="rp-top">
+            <div class="ring rp-ring" style="--p:{{ '%.4f' % (result.probability / 100) }}">
+               <svg viewBox="0 0 190 190" aria-hidden="true">
+                  <defs>
+                     <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%"  stop-color="#2E86D6"/>
+                        <stop offset="100%" stop-color="#06B6D4"/>
+                     </linearGradient>
+                  </defs>
+                  <circle class="track" cx="95" cy="95" r="85"/>
+                  <circle class="prog"  cx="95" cy="95" r="85"/>
+               </svg>
+               <div class="ring-num"><b>{{ result.probability }}</b><span>placed %</span></div>
+            </div>
+            <div>
+               <div class="rp-verdict">{{ '✔ Likely to be placed' if result.placed else '✕ Unlikely to be placed' }}</div>
+               <div class="rp-meta">{{ result.model_label }}</div>
+            </div>
+         </div>
+
+         {% if result.signals %}
+         <div class="panel-body" style="border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;">
+            <span class="kicker" style="margin-bottom:2px;">Versus the placed-student median</span>
+            {% for s in result.signals %}
+            <div class="gap-row {{ 'good' if s.tone == 'good' else 'bad' }}">
+               <span class="gr-name">{{ s.label }} · median {{ s.median }}</span>
+               <span class="gr-val">{{ '+' if s.delta >= 0 }}{{ s.delta }}</span>
+            </div>
+            {% endfor %}
+         </div>
+         {% endif %}
+      </div>
+      {% else %}
+      <div class="panel reveal">
+         <div class="panel-head">
+            <span class="ph-icon">◎</span>
+            <div>
+               <h3>Waiting for a profile</h3>
+               <p>Submit the form and the result appears here.</p>
+            </div>
+         </div>
+         <div class="panel-body">
+            <p style="font-size:.84rem;color:var(--muted);">
+               The panel will show a placement-probability ring, the model's verdict, and a
+               gap analysis against the students who were actually placed.
+            </p>
+         </div>
+      </div>
+      {% endif %}
+
+      <div class="panel reveal">
+         <div class="panel-head">
+            <span class="ph-icon">⬡</span>
+            <div>
+               <h3>Model behind this page</h3>
+               <p>Retrained without the leaking column.</p>
+            </div>
+         </div>
+         <div class="panel-body">
+            <div class="kpi-grid" style="grid-template-columns:1fr 1fr;">
+               <div>
+                  <div class="kpi-num mono" style="font-size:1.3rem;">{{ "%.2f"|format(deploy.accuracy * 100) }}%</div>
+                  <div class="kpi-sub">accuracy</div>
+               </div>
+               <div>
+                  <div class="kpi-num mono" style="font-size:1.3rem;">{{ "%.2f"|format(deploy.f1 * 100) }}%</div>
+                  <div class="kpi-sub">F1 score</div>
+               </div>
+               <div>
+                  <div class="kpi-num mono" style="font-size:1.3rem;">{{ "%.2f"|format(deploy.roc_auc * 100) }}%</div>
+                  <div class="kpi-sub">ROC-AUC</div>
+               </div>
+               <div>
+                  <div class="kpi-num mono" style="font-size:1.3rem;">{{ deploy.features }}</div>
+                  <div class="kpi-sub">features used</div>
+               </div>
+            </div>
+            <p style="margin-top:14px;font-size:.78rem;color:var(--muted);line-height:1.6;">
+               Target <b>PlacementStatus</b> — 1 = placed, 0 = not placed.<br>
+               Dropped before training: <span class="mono">{{ deploy.dropped|join(', ') }}</span>.
+            </p>
+         </div>
+      </div>
+
+      <div class="panel reveal">
+         <div class="panel-head">
+            <span class="ph-icon">◇</span>
+            <div>
+               <h3>How to read the result</h3>
+               <p>Three things worth knowing.</p>
+            </div>
+         </div>
+         <div class="panel-body">
+            <ul class="mini-list">
+               <li><span class="ml-ic">1</span><span><b>Blanks are fine.</b> Missing numbers become the training
+                  median and missing categories the most frequent value — so you never have to guess a number
+                  you do not know.</span></li>
+               <li><span class="ml-ic">2</span><span><b>The percentage is confidence in “placed”.</b>
+                  Around 50% means the model is genuinely unsure about that student.</span></li>
+               <li><span class="ml-ic">3</span><span><b>It is a classroom model.</b> Useful for understanding the
+                  data, not a real admissions or hiring forecast.</span></li>
+            </ul>
+         </div>
+      </div>
+
+      <div class="panel reveal">
+         <div class="panel-head">
+            <span class="ph-icon">⚠</span>
+            <div>
+               <h3>Why the numbers dropped</h3>
+               <p>From 99.8% to 91.5% — on purpose.</p>
+            </div>
+         </div>
+         <div class="panel-body">
+            <p style="font-size:.8rem;color:var(--muted);line-height:1.65;">{{ leakage_note }}</p>
+         </div>
+      </div>
+
+   </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}PlaceScope · Placement Intelligence Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- ==================================================================
+     1. READINESS CONSOLE  —  live scoring against the trained model
+     ================================================================== -->
+<section class="panel reveal" style="margin-bottom:20px;">
+   <div class="panel-body sim" id="sim">
+
+      <!-- left: the story + the controls -->
+      <div>
+         <span class="kicker">Placement intelligence console</span>
+         <h1 style="font-size:clamp(1.7rem,3.4vw,2.5rem);line-height:1.1;margin:10px 0 10px;">
+            See a placement <span class="grad-text">before it happens</span>.
+         </h1>
+         <p style="color:var(--muted);font-size:.96rem;max-width:52ch;">
+            Move the sliders. The trained model scores the profile instantly and shows how it
+            compares with the students who were actually placed.
+         </p>
+
+         <div class="sim-controls" style="margin-top:22px;">
+
+            <div class="sim-field">
+               <div class="sf-top"><label for="f-cgpa">CGPA</label><output>7.5</output></div>
+               <input class="sim-range" id="f-cgpa" type="range" data-field="CGPA"
+                      min="4" max="10" step="0.05" value="7.5">
+            </div>
+
+            <div class="sim-field">
+               <div class="sf-top"><label for="f-att">Attendance %</label><output>78</output></div>
+               <input class="sim-range" id="f-att" type="range" data-field="AttendancePercent"
+                      min="50" max="100" step="0.5" value="78">
+            </div>
+
+            <div class="sim-field">
+               <div class="sf-top"><label for="f-apt">Aptitude test</label><output>70</output></div>
+               <input class="sim-range" id="f-apt" type="range" data-field="AptitudeTestScore"
+                      min="30" max="100" step="0.5" value="70">
+            </div>
+
+            <div class="sim-field">
+               <div class="sf-top"><label for="f-cod">Coding test</label><output>60</output></div>
+               <input class="sim-range" id="f-cod" type="range" data-field="CodingTestScore"
+                      min="0" max="100" step="0.5" value="60">
+            </div>
+
+            <div class="sim-field">
+               <div class="sf-top"><label for="f-mock">Mock interview</label><output>60</output></div>
+               <input class="sim-range" id="f-mock" type="range" data-field="MockInterviewScore"
+                      min="16" max="100" step="0.5" value="60">
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+               <div class="sim-field">
+                  <label for="f-tier">College tier</label>
+                  <select class="btn sm" id="f-tier" data-field="CollegeTier" style="width:100%;">
+                     <option>Tier1</option><option selected>Tier2</option><option>Tier3</option>
+                  </select>
+               </div>
+               <div class="sim-field">
+                  <label for="f-stream">Stream</label>
+                  <select class="btn sm" id="f-stream" data-field="Stream" style="width:100%;">
+                     <option selected>CS</option><option>IT</option><option>ECE</option>
+                     <option>EE</option><option>Mechanical</option><option>Civil</option>
+                  </select>
+               </div>
+               <div class="sim-field">
+                  <label for="f-back">Backlogs</label>
+                  <select class="btn sm" id="f-back" data-field="HistoryOfBacklogs" style="width:100%;">
+                     <option selected>No</option><option>Yes</option>
+                  </select>
+               </div>
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+               <button class="btn primary sm" type="button" data-run>▶ Score this profile</button>
+               <span style="font-size:.75rem;color:var(--faint);">updates as you drag</span>
+            </div>
+         </div>
+      </div>
+
+      <!-- right: the live read-out -->
+      <div class="sim-readout">
+         <div class="ring" style="--p:0">
+            <svg viewBox="0 0 190 190" aria-hidden="true">
+               <defs>
+                  <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                     <stop offset="0%"  stop-color="#2E86D6"/>
+                     <stop offset="100%" stop-color="#06B6D4"/>
+                  </linearGradient>
+               </defs>
+               <circle class="track" cx="95" cy="95" r="85"/>
+               <circle class="prog"  cx="95" cy="95" r="85"/>
+            </svg>
+            <div class="ring-num"><b data-ring-num>—</b><span>placed %</span></div>
+         </div>
+
+         <div class="verdict" data-verdict>
+            <span class="v-icon" data-verdict-icon>◎</span>
+            <span>
+               <b data-verdict-text>Scoring…</b>
+               <small data-verdict-sub>reading the trained pipeline</small>
+            </span>
+         </div>
+
+         <div style="display:flex;flex-direction:column;gap:8px;" data-gaps></div>
+
+         <p style="font-size:.73rem;color:var(--faint);line-height:1.55;" data-note></p>
+      </div>
+
+   </div>
+</section>
+
+
+<!-- ==================================================================
+     2. KPI STRIP
+     ================================================================== -->
+<section class="kpi-grid reveal" style="margin-bottom:20px;">
+   <div class="kpi">
+      <span class="kpi-top">◈ Students analysed</span>
+      <div class="kpi-num" data-count="{{ total_records }}">0</div>
+      <div class="kpi-sub">{{ total_columns }} columns per record</div>
+   </div>
+   <div class="kpi">
+      <span class="kpi-top">▲ Placement rate</span>
+      <div class="kpi-num" data-count="{{ placed_pct }}" data-decimals="1" data-suffix="%">0</div>
+      <div class="kpi-sub">{{ "{:,}".format(placed_count) }} placed · {{ "{:,}".format(not_placed_count) }} not</div>
+   </div>
+   <div class="kpi">
+      <span class="kpi-top">⬡ Deployed model F1</span>
+      <div class="kpi-num" data-count="{{ deploy.f1 * 100 }}" data-decimals="1" data-suffix="%">0</div>
+      <div class="kpi-sub">leakage-free · {{ "%.1f"|format(deploy.accuracy * 100) }}% accuracy · ROC-AUC {{ "%.1f"|format(deploy.roc_auc * 100) }}%</div>
+   </div>
+   <div class="kpi">
+      <span class="kpi-top">⚙ Features kept</span>
+      <div class="kpi-num"><span data-count="{{ selected_features }}">0</span><span style="font-size:.9rem;color:var(--faint);"> / 31</span></div>
+      <div class="kpi-sub">chosen by Lasso selection</div>
+   </div>
+   <div class="kpi">
+      <span class="kpi-top">◇ Models &amp; methods</span>
+      <div class="kpi-num" data-count="{{ total_models }}">0</div>
+      <div class="kpi-sub">regression · trees · clusters · PCA</div>
+   </div>
+   <div class="kpi">
+      <span class="kpi-top">▦ Charts produced</span>
+      <div class="kpi-num" data-count="{{ total_charts }}">0</div>
+      <div class="kpi-sub">exploratory and model diagnostics</div>
+   </div>
+</section>
+
+
+<!-- ==================================================================
+     3. SIGNAL BOARD + TARGET FACTS
+     ================================================================== -->
+<section style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;margin-bottom:20px;">
+
+   <div class="panel reveal">
+      <div class="panel-head">
+         <span class="ph-icon">◈</span>
+         <div>
+            <h3>Signal strength vs placement</h3>
+            <p>Every feature ranked by how strongly it moves with <span class="mono">PlacementStatus</span>.</p>
+         </div>
+      </div>
+      <div class="panel-body">
+         {% if signals %}
+         <div class="signal">
+            {% for s in signals %}
+            <div class="signal-row {{ 'flag' if s.flag }}">
+               <span class="signal-name">{{ s.name }}</span>
+               <span class="signal-track"><span class="signal-fill" data-w="{{ s.pct }}"></span></span>
+               <span class="signal-val">{{ "%+.3f"|format(s.r) }}</span>
+            </div>
+            {% endfor %}
+         </div>
+         <p style="margin-top:16px;font-size:.78rem;color:var(--muted);padding:12px 14px;border-radius:12px;background:var(--tint-lemon);border:1px solid #F3DCA0;">
+            <b>⚠ Salary Package is flagged on purpose.</b> It is the strongest signal in the file, but it is
+            only known <i>after</i> a student is placed — classic target leakage. It stays in this chart
+            because the chart is honest about the data, and it is <b>removed from the deployed model</b>,
+            which is why the console above scores a realistic
+            {{ "%.1f"|format(deploy.accuracy * 100) }}% instead of 99.8%.
+         </p>
+         {% else %}
+         <p style="color:var(--muted);">Correlation matrix not found in the outputs folder.</p>
+         {% endif %}
+      </div>
+   </div>
+
+   <div class="panel reveal">
+      <div class="panel-head">
+         <span class="ph-icon">◎</span>
+         <div>
+            <h3>What separates the groups</h3>
+            <p>Median values for placed vs unplaced students.</p>
+         </div>
+      </div>
+      <div class="panel-body" style="display:flex;flex-direction:column;gap:12px;">
+         <div class="gap-row good"><span class="gr-name">CGPA — placed</span><span class="gr-val">8.02</span></div>
+         <div class="gap-row bad"><span class="gr-name">CGPA — unplaced</span><span class="gr-val">5.74</span></div>
+         <div class="gap-row good"><span class="gr-name">Attendance — placed</span><span class="gr-val">81.9%</span></div>
+         <div class="gap-row bad"><span class="gr-name">Attendance — unplaced</span><span class="gr-val">65.8%</span></div>
+         <div class="gap-row good"><span class="gr-name">Aptitude — placed</span><span class="gr-val">75.1</span></div>
+         <div class="gap-row bad"><span class="gr-name">Aptitude — unplaced</span><span class="gr-val">53.5</span></div>
+         <div class="gap-row">
+            <span class="gr-name">Missing cells to fill</span>
+            <span class="gr-val">{{ "{:,}".format(missing_cells) }}</span>
+         </div>
+         <div class="gap-row">
+            <span class="gr-name">Student clusters found</span>
+            <span class="gr-val">{{ best_clusters }}</span>
+         </div>
+      </div>
+   </div>
+
+</section>
+
+
+<!-- ==================================================================
+     4. PIPELINE STEPPER
+     ================================================================== -->
+<section class="panel reveal" style="margin-bottom:20px;">
+   <div class="panel-head">
+      <span class="ph-icon">⚙</span>
+      <div>
+         <h3>The five-module pipeline</h3>
+         <p>From a raw 50,000-row spreadsheet to a validated, deployable model.</p>
+      </div>
+   </div>
+   <div class="panel-body">
+      <div class="stepper">
+         {% for step in pipeline %}
+         <a class="step {{ 'active' if loop.first }}" href="{{ url_for(step.endpoint) }}">
+            <span class="step-dot">{{ step.icon }}</span>
+            <b>{{ step.title }}</b>
+            <small class="mono">{{ step.step }}</small>
+            <small style="display:block;">{{ step.desc }}</small>
+         </a>
+         {% endfor %}
+      </div>
+   </div>
+</section>
+
+
+<!-- ==================================================================
+     4b. LEAKAGE: BEFORE vs AFTER
+     ================================================================== -->
+<section class="panel reveal" style="margin-bottom:20px;">
+   <div class="panel-head">
+      <span class="ph-icon">⚠</span>
+      <div>
+         <h3>Leakage found — and fixed</h3>
+         <p>The most important finding in this project, and the reason the deployed numbers differ.</p>
+      </div>
+   </div>
+   <div class="panel-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;">
+
+      <div style="border:1px solid var(--line);border-radius:var(--r-md);padding:16px;background:var(--surface-soft);">
+         <span class="badge bad">✕ leaky</span>
+         <h4 style="margin:10px 0 4px;">Module 3 models</h4>
+         <p style="font-size:.8rem;color:var(--muted);">Trained with <span class="mono">Salary Package</span> in the feature set.</p>
+         <div style="margin-top:12px;display:flex;gap:26px;">
+            <div><div class="kpi-num mono" style="font-size:1.4rem;">99.82%</div><div class="kpi-sub">accuracy</div></div>
+            <div><div class="kpi-num mono" style="font-size:1.4rem;">99.82%</div><div class="kpi-sub">F1</div></div>
+         </div>
+         <p style="font-size:.75rem;color:var(--muted);margin-top:10px;">Not usable for real forecasting — the answer is inside the features.</p>
+      </div>
+
+      <div style="border:1px solid #BFE3D3;border-radius:var(--r-md);padding:16px;background:#F1FBF6;">
+         <span class="badge good">✓ deployed</span>
+         <h4 style="margin:10px 0 4px;">Module 6 model</h4>
+         <p style="font-size:.8rem;color:var(--muted);">Trained without <span class="mono">StudentID</span>, <span class="mono">Salary Package</span> or <span class="mono">IsAnomaly</span>.</p>
+         <div style="margin-top:12px;display:flex;gap:26px;">
+            <div><div class="kpi-num mono" style="font-size:1.4rem;">{{ "%.2f"|format(deploy.accuracy * 100) }}%</div><div class="kpi-sub">accuracy</div></div>
+            <div><div class="kpi-num mono" style="font-size:1.4rem;">{{ "%.2f"|format(deploy.f1 * 100) }}%</div><div class="kpi-sub">F1</div></div>
+            <div><div class="kpi-num mono" style="font-size:1.4rem;">{{ "%.2f"|format(deploy.roc_auc * 100) }}%</div><div class="kpi-sub">ROC-AUC</div></div>
+         </div>
+         <p style="font-size:.75rem;color:var(--muted);margin-top:10px;">This is the model every Prediction page on this site actually serves.</p>
+      </div>
+
+   </div>
+</section>
+
+
+<!-- ==================================================================
+     5. LEADERBOARD + SEGMENTATION
+     ================================================================== -->
+<section style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;margin-bottom:20px;">
+
+   <div class="panel reveal">
+      <div class="panel-head">
+         <span class="ph-icon">⬡</span>
+         <div>
+            <h3>Model leaderboard</h3>
+            <p>Placement classifiers ranked by the metric they reported.</p>
+         </div>
+      </div>
+      <div class="board">
+         {% for row in leaderboard %}
+         <div class="board-row {{ 'top' if row.best }}">
+            <span class="board-rank">{{ loop.index }}</span>
+            <span>
+               <span class="board-name">{{ row.model }}</span><br>
+               <span class="board-meta">{{ row.kind }} — {{ row.note }}</span>
+            </span>
+            <span class="board-score">
+               {% if row.accuracy %}{{ "%.2f"|format(row.accuracy * 100) }}%{% else %}{{ "%.2f"|format(row.f1 * 100) }}% F1{% endif %}
+            </span>
+         </div>
+         {% endfor %}
+      </div>
+      <div class="panel-body" style="padding-top:14px;">
+         <a class="btn sm" href="{{ url_for('models') }}">See all 20 models →</a>
+      </div>
+   </div>
+
+   <div style="display:flex;flex-direction:column;gap:18px;">
+      <div class="panel reveal">
+         <div class="panel-head">
+            <span class="ph-icon">◈</span>
+            <div>
+               <h3>Student segments</h3>
+               <p>Unsupervised structure in the data.</p>
+            </div>
+         </div>
+         <div class="panel-body" style="display:flex;flex-direction:column;gap:12px;">
+            {% for seg in segmentation %}
+            <div class="gap-row">
+               <span class="gr-name">{{ seg.label }}</span>
+               <span class="gr-val">{{ seg.value }}</span>
+            </div>
+            <p style="font-size:.74rem;color:var(--faint);margin-top:-6px;">{{ seg.note }}</p>
+            {% endfor %}
+         </div>
+      </div>
+
+      <div class="panel reveal">
+         <div class="panel-head">
+            <span class="ph-icon">◇</span>
+            <div>
+               <h3>Model serving this page</h3>
+               <p>Loaded once and reused for every score.</p>
+            </div>
+         </div>
+         <div class="panel-body">
+            <div class="console">
+<span class="c-dim"># decision_tree_model.pkl</span>
+Pipeline(
+  preprocessor=<span class="c-key">ColumnTransformer</span>(
+     num=SimpleImputer(<span class="c-val">median</span>),
+     cat=SimpleImputer(<span class="c-val">most_frequent</span>) + OneHotEncoder()
+  ),
+  classifier=<span class="c-key">DecisionTreeClassifier</span>(
+     max_depth=<span class="c-val">6</span>, random_state=<span class="c-val">42</span>
+  )
+)</div>
+         </div>
+      </div>
+   </div>
+
+</section>
+
+
+<!-- ==================================================================
+     6. EXPLORE
+     ================================================================== -->
+<section class="reveal">
+   <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <h2 style="font-size:1.25rem;">Explore the project</h2>
+      <span style="font-size:.78rem;color:var(--faint);">press <span class="mono">⌘K</span> to jump anywhere</span>
+   </div>
+   <div class="tiles">
+      <a class="tile" href="{{ url_for('dataset') }}">
+         <span class="tile-ic">▤</span><b>Dataset</b>
+         <p>50,000 records, 32 columns, a full column dictionary and the missing-value map.</p>
+         <span class="tile-go">Open dataset →</span>
+      </a>
+      <a class="tile" href="{{ url_for('preprocessing') }}">
+         <span class="tile-ic">⚙</span><b>Preprocessing</b>
+         <p>Cleaning, encoding, scaling and the Lasso study that kept 12 of 31 features.</p>
+         <span class="tile-go">See the pipeline →</span>
+      </a>
+      <a class="tile" href="{{ url_for('visualization') }}">
+         <span class="tile-ic">◔</span><b>Visualization</b>
+         <p>{{ total_charts }} exploratory charts — distributions, boxplots, correlations, counts.</p>
+         <span class="tile-go">Browse charts →</span>
+      </a>
+      <a class="tile" href="{{ url_for('models') }}">
+         <span class="tile-ic">⬡</span><b>ML Models</b>
+         <p>Trees, regression, clustering, PCA and t-SNE — compared with their real metrics.</p>
+         <span class="tile-go">Compare models →</span>
+      </a>
+      <a class="tile" href="{{ url_for('prediction') }}">
+         <span class="tile-ic">◎</span><b>Prediction Lab</b>
+         <p>The full 28-field student form with the gap analysis alongside each result.</p>
+         <span class="tile-go">Open the lab →</span>
+      </a>
+      <a class="tile" href="{{ url_for('reports') }}">
+         <span class="tile-ic">▦</span><b>Reports</b>
+         <p>Every chart, metric table and saved file the project produced, per module.</p>
+         <span class="tile-go">Open reports →</span>
+      </a>
+   </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,16 @@
+Parameter,Value
+Input Dataset,D:/ML/placement_prediction/dataset/final_preprocess_M2.csv
+Original Number of Records,50000
+Original Number of Columns,32
+Numeric Features Used,32
+Constant Features Removed,0
+Missing Values Before Processing,19976
+Missing Values After Processing,0
+t-SNE Output Dimensions,2
+Perplexity,30
+Learning Rate,auto
+Maximum Iterations,1000
+Initialization,PCA
+Random State,42
+KL Divergence,2.534144878387451
+Final Iteration Count,999

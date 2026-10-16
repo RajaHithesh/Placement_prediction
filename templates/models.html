@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+
+{% block title %}ML Models{% endblock %}
+
+
+{% block content %}
+
+
+<section class="page-head">
+   <div class="wrap">
+       <span class="eyebrow rise">Machine learning</span>
+       <h1 class="rise" style="--d:.1s">{{ total_models }} models &amp; methods, <span class="grad-text">trained &amp; evaluated</span></h1>
+       <p class="lead rise" style="--d:.2s">
+           Pick a model by name below — its charts, metrics and messages open right there.
+           <b>{{ models|length }} result folders</b> are listed, with no module headings to scroll past.
+           The four tables below summarise everything: classification, regression,
+           unsupervised learning and feature selection.
+       </p>
+   </div>
+</section>
+
+
+
+
+<!-- ================= MODEL NAME BAR ================= -->
+<section class="section" style="padding-top:6px;">
+   <div class="wrap">
+       <div class="model-nav reveal" id="modelNav">
+           <button type="button" class="viz-chip is-active" data-model="all">
+               ✨ All {{ models|length }}
+           </button>
+           {% for m in models %}
+           <button type="button" class="viz-chip" data-model="{{ m.key }}">{{ m.short }}</button>
+           {% endfor %}
+       </div>
+   </div>
+</section>
+
+
+
+
+<!-- ================= COUNT RECONCILIATION ================= -->
+<section class="section" style="padding-top:0;">
+   <div class="wrap reveal">
+
+       <div class="kpi-grid">
+           <div class="kpi">
+               <div class="kpi-top">🧠 Models &amp; methods</div>
+               <div class="kpi-num">{{ total_models }}</div>
+               <div class="kpi-sub">distinct algorithms and solvers trained</div>
+           </div>
+           <div class="kpi">
+               <div class="kpi-top">📁 Folders listed here</div>
+               <div class="kpi-num">{{ models|length }}</div>
+               <div class="kpi-sub">one folder can hold several models</div>
+           </div>
+           <div class="kpi">
+               <div class="kpi-top">🚫 Nothing to show</div>
+               <div class="kpi-num">{{ unlisted|length }}</div>
+               <div class="kpi-sub">folders that produced no chart or metric</div>
+           </div>
+           <div class="kpi">
+               <div class="kpi-top">🧾 Overview rows</div>
+               <div class="kpi-num">{{ overview|length }}</div>
+               <div class="kpi-sub">related models grouped onto one row</div>
+           </div>
+       </div>
+
+       <div class="note-banner info" style="margin-top:18px;">
+           <span class="nb-icon">🧮</span>
+           <div>
+               <h4>Why the headline number and the buttons below differ</h4>
+               <p>
+                   The headline counts <b>models and methods</b>; the buttons count <b>result
+                   folders</b>. One folder often holds more than one model — so
+                   <code>Regularization_ridg_laso_elastic_outputs</code> alone contains
+                   <b>three</b> trained models (Ridge, Lasso, Elastic Net) and
+                   <code>Linear_Regression_CFNE_GD_Compare_M2</code> compares <b>two</b> solvers.
+                   That is why {{ total_models }} models appear as only
+                   {{ models|length }} folders.
+               </p>
+               <p style="margin-top:12px;">
+                   Two more folders exist in <code>outputs/</code> but have nothing this page
+                   can display, so they are not made into buttons:
+               </p>
+               <ul class="mini-list" style="margin-top:12px;">
+                   {% for name, why in unlisted %}
+                   <li><span class="ml-ic">!</span><span><b>{{ name }}</b> — {{ why }}</span></li>
+                   {% endfor %}
+               </ul>
+               <p style="margin-top:12px;">
+                   The EDA and correlation-matrix output folders are charts rather than models,
+                   so they are shown on the <b>Visualization</b> page instead.
+               </p>
+           </div>
+       </div>
+
+   </div>
+</section>
+
+
+
+
+<!-- ================= BEST MODEL ================= -->
+<section class="section" style="padding-top:6px;">
+   <div class="wrap">
+       <div class="best-banner reveal">
+           <div class="best-badge">✅ Best recorded score</div>
+           <div class="best-body">
+               <h2>{{ best_model.name }} <span class="best-score">{{ best_model.headline }}</span></h2>
+               <ul class="best-reasons">
+                   {% for reason in best_model.reasons %}
+                   <li>{{ reason }}</li>
+                   {% endfor %}
+               </ul>
+               <p class="best-note">
+                   Target class: <b>PlacementStatus</b> (1 = placed, 0 = not placed) ·
+                   test set <b>10,000 rows</b> · identical 80/20 stratified split
+                   (<code>random_state&nbsp;=&nbsp;42</code>) for every model.
+               </p>
+           </div>
+       </div>
+   </div>
+</section>
+
+
+
+
+<!-- ================= TABLE 1 - CLASSIFICATION ================= -->
+<section class="section" style="padding-top:0;">
+   <div class="wrap reveal">
+
+       <div class="cmp-head">
+           <span class="eyebrow">Table 1 · All placement models compared</span>
+           <h2>Classification models ranked by F1 score</h2>
+           <p>
+               Every model below predicts the same thing (<b>placed / not placed</b>) on the same
+               untouched test set, so the scores are directly comparable. Because
+               {{ "%.2f"|format(baseline_accuracy * 100) }}% of the students are already "placed",
+               a model that always answers "placed" already scores
+               {{ "%.4f"|format(baseline_accuracy) }} accuracy and
+               {{ "%.4f"|format(baseline_f1) }} F1 — which is why <b>F1, not accuracy, decides the winner</b>.
+           </p>
+       </div>
+
+       <div class="table-wrap">
+           <table class="cmp-table">
+               <thead>
+                   <tr>
+                       <th>#</th>
+                       <th>Model</th>
+                       <th>Type</th>
+                       <th>Accuracy</th>
+                       <th>Precision</th>
+                       <th>Recall</th>
+                       <th>F1 Score</th>
+                       <th>Note</th>
+                   </tr>
+               </thead>
+               <tbody>
+                   {% for row in comparison %}
+                   <tr{% if row.best %} class="is-best"{% endif %}>
+                       <td>{{ row.rank }}</td>
+                       <td class="cmp-name">
+                           {% if row.best %}<span class="cmp-star">★</span>{% endif %}{{ row.model }}
+                       </td>
+                       <td>{{ row.kind }}</td>
+                       <td>{% if row.accuracy is not none %}{{ "%.4f"|format(row.accuracy) }}{% else %}—{% endif %}</td>
+                       <td>{% if row.precision is not none %}{{ "%.4f"|format(row.precision) }}{% else %}—{% endif %}</td>
+                       <td>{% if row.recall is not none %}{{ "%.4f"|format(row.recall) }}{% else %}—{% endif %}</td>
+                       <td class="cmp-f1">{% if row.f1 is not none %}{{ "%.4f"|format(row.f1) }}{% else %}—{% endif %}</td>
+                       <td class="cmp-note">{{ row.note }}</td>
+                   </tr>
+                   {% endfor %}
+               </tbody>
+           </table>
+       </div>
+
+       <p class="cmp-foot">
+           Scores read directly from each module's own metrics file, for example
+           <code>outputs/Random_Forest_Tree_M3_Outputs/metrics/random_forest_metrics.csv</code>.
+           The reference row is not a trained model — it shows what a model that always
+           answers "placed" would score, so the real models can be judged against it.
+       </p>
+
+       <div class="note-banner reveal" style="--d:.1s">
+           <span class="nb-icon">⚠️</span>
+           <div>
+               <h4>Reading this table honestly</h4>
+               <p>
+                   The scores are extremely high because the dataset still contains
+                   <code>Salary Package</code> — a value a student only has <b>after</b> being placed.
+                   A model can therefore "cheat" by reading it. This is called
+                   <b>target leakage</b>, and it inflates every placement score in this table.
+                   The Decision Tree and Random Forest were both trained with that column
+                   present, so the fair reading is: <b>the ranking is still useful, the
+                   percentages are optimistic</b>. Re-training without <code>Salary Package</code>
+                   (and without <code>IsAnomaly</code>) would give a realistic score.
+               </p>
+           </div>
+       </div>
+
+       <div class="note-banner info reveal" style="--d:.15s">
+           <span class="nb-icon">🧭</span>
+           <div>
+               <h4>Two models are deliberately left out of the ranking</h4>
+               <p>
+                   <b>AdaBoost</b> reached 0.9996 accuracy and F1, but its recorded metrics are for a
+                   <b>different target</b> — the 3-class <code>CGPA_Tier</code> (High / Mid / Low), not
+                   placement — and its feature list also contains <code>PlacementStatus</code> itself.
+                   <b>Binary Logistic Regression</b> saved its predictions with an inconsistent label
+                   encoding (<code>-1/0</code> actual vs <code>0/1</code> predicted), so no honest score
+                   can be computed from the saved file. Both are still shown in the gallery below,
+                   untouched.
+               </p>
+           </div>
+       </div>
+
+   </div>
+</section>
+
+
+
+
+<!-- ================= TABLE 2 - REGRESSION ================= -->
+<section class="section" style="padding-top:0;">
+   <div class="wrap reveal">
+
+       <div class="cmp-head">
+           <span class="eyebrow">Table 2 · Regression</span>
+           <h2>Predicting the placement number</h2>
+           <p>
+               A different task: instead of yes/no, these models predict
+               <b>PlacementStatus as a number</b> (0 or 1) and are judged with error metrics.
+               <b>R² = 0.5253</b> means the linear model explains about <b>52.5%</b> of the
+               variation — a genuinely useful result, and the most trustworthy number in the
+               project because it does not need a threshold to be meaningful.
+           </p>
+       </div>
+
+       <div class="table-wrap">
+           <table class="cmp-table">
+               <thead>
+                   <tr>
+                       <th>Model</th><th>MAE</th><th>MSE</th><th>RMSE</th><th>R²</th><th>Note</th>
+                   </tr>
+               </thead>
+               <tbody>
+                   {% for row in regression %}
+                   <tr>
+                       <td class="cmp-name">{{ row.model }}</td>
+                       <td>{% if row.mae is not none %}{{ "%.4f"|format(row.mae) }}{% else %}—{% endif %}</td>
+                       <td>{% if row.mse is not none %}{{ "%.4f"|format(row.mse) }}{% else %}—{% endif %}</td>
+                       <td>{% if row.rmse is not none %}{{ "%.4f"|format(row.rmse) }}{% else %}—{% endif %}</td>
+                       <td class="cmp-f1">{% if row.r2 is not none %}{{ "%.4f"|format(row.r2) }}{% else %}—{% endif %}</td>
+                       <td class="cmp-note">{{ row.note }}</td>
+                   </tr>
+                   {% endfor %}
+               </tbody>
+           </table>
+       </div>
+
+       <p class="cmp-foot">
+           MAE = mean absolute error · MSE = mean squared error · RMSE = root mean squared error ·
+           R² = how much variation the model explains (1.0 is perfect, 0.0 is no better than
+           always guessing the average).
+       </p>
+
+   </div>
+</section>
+
+
+
+
+<!-- ================= TABLE 3 - UNSUPERVISED ================= -->
+<section class="section" style="padding-top:0;">
+   <div class="wrap reveal">
+
+       <div class="cmp-head">
+           <span class="eyebrow">Table 3 · Unsupervised</span>
+           <h2>Clustering and dimensionality reduction</h2>
+           <p>
+               These models have <b>no target label</b> to learn from, so they cannot predict
+               placement. They are used to <b>group students into profiles</b>
+               (Hierarchical, DBSCAN, K-Means) and to <b>compress and visualise</b> the
+               {{ total_columns }} columns as a small number of new dimensions (PCA, t-SNE).
+               Higher silhouette = better separated clusters.
+           </p>
+       </div>
+
+       <div class="table-wrap">
+           <table class="cmp-table">
+               <thead>
+                   <tr><th>Model</th><th>Task</th><th>Key result</th></tr>
+               </thead>
+               <tbody>
+                   {% for row in unsupervised %}
+                   <tr>
+                       <td class="cmp-name">{{ row.model }}</td>
+                       <td>{{ row.task }}</td>
+                       <td class="cmp-note">{{ row.result }}</td>
+                   </tr>
+                   {% endfor %}
+               </tbody>
+           </table>
+       </div>
+
+       <p class="cmp-foot">
+           Silhouette score ranges from -1 to 1 (higher is better). Calinski-Harabasz and
+           Davies-Bouldin compare cluster quality between methods. Silhouette values in the
+           single digits are normal for student data, where profiles overlap a lot.
+           DBSCAN's <code>eps = 0.80</code> and <code>min_samples = 10</code> decide how dense a
+           region must be to count as a cluster.
+       </p>
+
+   </div>
+</section>
+
+
+
+
+<!-- ================= TABLE 4 - FEATURE SELECTION ================= -->
+<section class="section" style="padding-top:0;">
+   <div class="wrap reveal">
+
+       <div class="cmp-head">
+           <span class="eyebrow">Table 4 · Feature selection</span>
+           <h2>What actually drives a placement</h2>
+           <p>
+               Three regularised models were trained on all 31 input features and their
+               coefficients compared. <b>Lasso (L1)</b> is the interesting one: it pushes weak
+               coefficients to exactly zero, so the features it keeps are the ones carrying
+               real signal — <b>{{ lasso_features|length }} of 31 survived</b>.
+           </p>
+       </div>
+
+       <div class="table-wrap">
+           <table class="cmp-table">
+               <thead>
+                   <tr>
+                       <th>#</th><th>Feature</th><th>Ridge (L2)</th>
+                       <th>Lasso (L1)</th><th>Elastic Net</th><th>Kept by Lasso</th>
+                   </tr>
+               </thead>
+               <tbody>
+                   {% for row in lasso_features %}
+                   <tr>
+                       <td>{{ loop.index }}</td>
+                       <td class="cmp-name">{{ row.feature }}</td>
+                       <td>{{ "%+.4f"|format(row.ridge) }}</td>
+                       <td class="cmp-f1">{{ "%+.4f"|format(row.lasso) }}</td>
+                       <td>{{ "%+.4f"|format(row.elastic) }}</td>
+                       <td>{% if row.selected %}✅{% else %}—{% endif %}</td>
+                   </tr>
+                   {% endfor %}
+               </tbody>
+           </table>
+       </div>
+
+       <p class="cmp-foot">
+           Coefficients are on standardized data, so their size tells you how much each feature
+           moves the outcome. Positive = more likely placed, negative = less likely.
+           Note that <code>Salary Package</code> dominates the list — and it is the one column
+           that must <b>not</b> be used for a real prediction, because it is only known after
+           a student is placed.
+       </p>
+
+   </div>
+</section>
+
+
+
+
+<!-- ================= QUICK REFERENCE ================= -->
+<section class="section" style="padding-top:0;">
+   <div class="wrap reveal">
+
+       <div class="cmp-head">
+           <span class="eyebrow">Overview</span>
+           <h2>Every model at a glance</h2>
+           <p>
+               Task, target and headline result for all twenty models and methods. Some rows
+               group closely related work (for example Ridge, Lasso and Elastic Net), which is
+               why the table has {{ overview|length }} rows.
+           </p>
+       </div>
+
+       <div class="table-wrap">
+           <table>
+               <thead>
+                   <tr><th>Model</th><th>Task</th><th>Target</th><th>Key Result</th></tr>
+               </thead>
+               <tbody>
+                   {% for row in overview %}
+                   <tr>
+                       <td>{{ row.model }}</td>
+                       <td>{{ row.task }}</td>
+                       <td>{{ row.target }}</td>
+                       <td>{{ row.result }}</td>
+                   </tr>
+                   {% endfor %}
+               </tbody>
+           </table>
+       </div>
+
+   </div>
+</section>
+
+
+
+
+<!-- ================= EACH MODEL, BY NAME ================= -->
+{% for m in models %}
+<section class="section model-section" data-model="{{ m.key }}" style="padding-top:0;">
+   <div class="wrap">
+
+       <div class="section-title reveal" style="margin-top:44px;">
+           <span class="st-icon tint-mint">📌</span>
+           <div>
+               <h2>{{ m.short }}</h2>
+               <p>
+                   {{ m.module.blurb }}
+                   <span class="mt-meta">{{ m.n_images }} charts · {{ m.n_messages }} messages</span>
+               </p>
+           </div>
+       </div>
+
+       <div class="model-block reveal">
+           {% with module = m.module %}
+           {% include "_module_outputs.html" %}
+           {% endwith %}
+       </div>
+
+   </div>
+</section>
+{% endfor %}
+
+
+<section class="section" style="padding-top:0;">
+   <div class="wrap" style="text-align:center;">
+       <span class="eyebrow reveal"><span class="pulse-dot"></span> Pipeline status</span>
+       <ol class="steps reveal" style="margin-top:36px;">
+           <li class="step"><span class="step-num">✓</span><span>Data Understood</span></li>
+           <li class="step"><span class="step-num">✓</span><span>Cleaned &amp; Encoded</span></li>
+           <li class="step"><span class="step-num">✓</span><span>Final Dataset Ready</span></li>
+           <li class="step"><span class="step-num">✓</span><span>Models Trained</span></li>
+           <li class="step"><span class="step-num">✓</span><span>Evaluated</span></li>
+       </ol>
+       <p style="margin-top:26px;">
+           <a href="{{ url_for('prediction') }}" class="btn">Try a live prediction →</a>
+           <a href="{{ url_for('reports') }}" class="btn ghost" style="margin-left:12px;">Full results archive →</a>
+       </p>
+   </div>
+</section>
+
+
+<script>
+(function () {
+   var chips = Array.prototype.slice.call(document.querySelectorAll('#modelNav .viz-chip'));
+   var sections = Array.prototype.slice.call(document.querySelectorAll('.model-section'));
+   if (!chips.length) return;
+
+   function show(key) {
+       sections.forEach(function (sec) {
+           var visible = key === 'all' || sec.dataset.model === key;
+           sec.style.display = visible ? '' : 'none';
+           if (visible) {
+               sec.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+           }
+       });
+   }
+
+   chips.forEach(function (chip) {
+       chip.addEventListener('click', function () {
+           var key = chip.dataset.model;
+           chips.forEach(function (c) { c.classList.toggle('is-active', c === chip); });
+           show(key);
+           if (key !== 'all') {
+               var target = document.querySelector('.model-section[data-model="' + key + '"]');
+               if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+           }
+       });
+   });
+})();
+</script>
+
+
+{% endblock %}

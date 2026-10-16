@@ -1,0 +1,11 @@
+Model,Random Forest (leakage-free)
+Accuracy,0.9152
+Precision,0.9179
+Recall,0.9565
+F1,0.9368
+ROC_AUC,0.9766
+CV_F1_mean,0.9407
+CV_F1_std,0.0023
+Features,28
+Train_rows,40000
+Test_rows,10000

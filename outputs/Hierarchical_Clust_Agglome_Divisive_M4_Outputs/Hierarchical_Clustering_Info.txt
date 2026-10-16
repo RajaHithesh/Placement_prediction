@@ -1,0 +1,35 @@
+PLACEMENT PREDICTION - HIERARCHICAL CLUSTERING
+================================================
+
+Original Dataset:
+D:/ML/placement_prediction/dataset/final_preprocess_M2.csv
+
+Original Dataset Shape:
+(50000, 32)
+
+Features Used:
+- CGPA
+- HistoryOfBacklogs
+- Internships
+- AptitudeTestScore
+
+Records Used:
+500
+
+Number of Clusters:
+3
+
+Random State:
+42
+
+Agglomerative Metrics:
+Silhouette Score: 0.3612375709334336
+Calinski-Harabasz Index: 281.3832489524578
+Davies-Bouldin Index: 1.0022472424367572
+
+Divisive Metrics:
+Silhouette Score: 0.3758704546528752
+Calinski-Harabasz Index: 332.5945976953079
+Davies-Bouldin Index: 0.9699694493550828
+
+Original dataset was not modified.

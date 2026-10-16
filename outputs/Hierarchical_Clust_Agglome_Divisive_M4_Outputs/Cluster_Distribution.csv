@@ -1,0 +1,7 @@
+Method,Cluster,Number_of_Records
+Agglomerative,0,281
+Agglomerative,1,127
+Agglomerative,2,92
+Divisive,0,210
+Divisive,1,208
+Divisive,2,82

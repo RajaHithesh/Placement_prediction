@@ -1,0 +1,48 @@
+{
+  "model": "RandomForestClassifier (leakage-free)",
+  "target": "PlacementStatus",
+  "dropped_columns": [
+    "StudentID",
+    "Salary Package",
+    "IsAnomaly"
+  ],
+  "n_features": 28,
+  "numeric_features": [
+    "SGPA_Sem1",
+    "SGPA_Sem2",
+    "SGPA_Sem3",
+    "SGPA_Sem4",
+    "SGPA_Sem5",
+    "SGPA_Sem6",
+    "SGPA_Sem7",
+    "SGPA_Sem8",
+    "CGPA",
+    "AttendancePercent",
+    "Internships",
+    "Projects",
+    "Workshops",
+    "Certifications",
+    "Publications",
+    "AptitudeTestScore",
+    "SoftSkillsRating",
+    "CodingTestScore",
+    "MockInterviewScore",
+    "ExtraCurricular"
+  ],
+  "categorical_features": [
+    "Gender",
+    "City",
+    "CollegeTier",
+    "Stream",
+    "Specialisation",
+    "Hostel",
+    "HistoryOfBacklogs",
+    "CGPA_Tier"
+  ],
+  "accuracy": 0.9152,
+  "precision": 0.9179,
+  "recall": 0.9565,
+  "f1": 0.9368,
+  "roc_auc": 0.9766,
+  "cv_f1_mean": 0.9407
+}

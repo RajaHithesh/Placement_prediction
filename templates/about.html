@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+
+{% block title %}About{% endblock %}
+
+
+{% block content %}
+
+
+<section class="page-head">
+   <div class="wrap">
+       <span class="eyebrow rise">About the project</span>
+       <h1 class="rise" style="--d:.1s">What is the <span class="grad-text">Placement Prediction System</span>?</h1>
+       <p class="lead rise" style="--d:.2s">
+           A student-employability analysis and prediction system built with Python,
+           Pandas and scikit-learn. It studies 50,000 student records and learns which
+           academic, skill and background factors lead to a placement.
+       </p>
+   </div>
+</section>
+
+
+<section class="section">
+   <div class="wrap grid grid-2">
+
+       <div class="panel reveal">
+           <div class="icon-chip tint-mint">🎓</div>
+           <h3>The idea</h3>
+           <p>
+               Placement outcomes depend on a mix of academics (CGPA, semester grades,
+               attendance), skills (aptitude, coding, soft skills) and background
+               (college tier, stream, hostel, backlogs). This project puts all of that
+               into one dataset and asks a single question: <b>will this student be placed?</b>
+           </p>
+       </div>
+
+       <div class="panel reveal" style="--d:.1s;">
+           <div class="icon-chip tint-peach">🎯</div>
+           <h3>The goals</h3>
+           <p>
+               Understand the data, build a clean and reusable preprocessing pipeline,
+               compare several models fairly, and end with a working prediction page
+               where a student profile can be entered and scored live.
+           </p>
+       </div>
+
+       <div class="panel reveal" style="--d:.2s;">
+           <div class="icon-chip tint-lilac">🧪</div>
+           <h3>How it is built</h3>
+           <p>
+               Twenty models and methods — linear and logistic regression, regularisation,
+               decision trees, random forest, AdaBoost, clustering, PCA and t-SNE — all
+               trained on the same cleaned data, with every chart and metric kept in
+               per-module output folders.
+           </p>
+       </div>
+
+       <div class="panel reveal" style="--d:.3s;">
+           <div class="icon-chip tint-lemon">🔍</div>
+           <h3>How to read the results</h3>
+           <p>
+               The recorded scores are very high, and the Models page explains why
+               (one field, <code>Salary Package</code>, is only known after a student is
+               placed). The honest reading — and the recommended next step — is shown
+               clearly next to every table.
+           </p>
+       </div>
+
+   </div>
+
+   <div class="wrap reveal" style="margin-top:26px;">
+       <div class="chip-row">
+           <span class="chip">🐍 Python</span>
+           <span class="chip cool">🐼 Pandas</span>
+           <span class="chip alt">🧠 scikit-learn</span>
+           <span class="chip cool">🔥 Flask</span>
+           <span class="chip">📊 Matplotlib · Seaborn</span>
+           <span class="chip cool">🔢 NumPy</span>
+       </div>
+   </div>
+</section>
+
+
+{% endblock %}

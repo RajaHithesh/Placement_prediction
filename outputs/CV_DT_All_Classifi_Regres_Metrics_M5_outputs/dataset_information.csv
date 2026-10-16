@@ -1,0 +1,9 @@
+Parameter,Value
+Original Rows,50000
+Original Columns,32
+Working Rows,50000
+Working Columns,32
+Target Column,PlacementStatus
+Number of Classes,2
+Number of Features,31
+Duplicate Rows Removed,0

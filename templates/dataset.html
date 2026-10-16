@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+
+{% block title %}Dataset{% endblock %}
+
+
+{% block content %}
+
+
+<section class="page-head">
+   <div class="wrap">
+       <span class="eyebrow rise">The data</span>
+       <h1 class="rise" style="--d:.1s">Fifty thousand students, <span class="grad-text">one outcome each</span></h1>
+       <p class="lead rise" style="--d:.2s">
+           The project works from a single consolidated file:
+           <b>dataset/placement_predict_50K_Raw.csv</b> — 50,000 student records
+           with 32 columns covering academics, skills and background.
+       </p>
+   </div>
+</section>
+
+
+<section class="section" style="padding-top:8px;">
+   <div class="wrap">
+
+       <div class="stat-grid">
+           <div class="stat reveal" style="--d:.0s">
+               <span class="stat-emoji">📄</span>
+               <span class="stat-num" data-count="{{ total_records }}">0</span>
+               <span class="stat-label">rows × {{ total_columns }} columns</span>
+           </div>
+           <div class="stat reveal" style="--d:.08s">
+               <span class="stat-emoji">✅</span>
+               <span class="stat-num" data-count="{{ placed_pct }}" data-decimals="1" data-suffix="%">0%</span>
+               <span class="stat-label">placed ({{ '{:,}'.format(placed_count) }} students)</span>
+           </div>
+           <div class="stat reveal" style="--d:.16s">
+               <span class="stat-emoji">❌</span>
+               <span class="stat-num" data-count="{{ not_placed_pct }}" data-decimals="1" data-suffix="%">0%</span>
+               <span class="stat-label">not placed ({{ '{:,}'.format(not_placed_count) }} students)</span>
+           </div>
+           <div class="stat reveal" style="--d:.24s">
+               <span class="stat-emoji">🕳️</span>
+               <span class="stat-num" data-count="{{ missing_cells }}">0</span>
+               <span class="stat-label">missing cells · 5 columns only</span>
+           </div>
+       </div>
+
+   </div>
+</section>
+
+
+<section class="section" style="padding-top:0;">
+   <div class="wrap">
+
+       <div class="section-title reveal">
+           <span class="st-icon tint-sky">🗂️</span>
+           <div>
+               <h2>Dataset preview</h2>
+               <p>The first {{ preview_shown }} rows of the raw file, exactly as stored.</p>
+           </div>
+       </div>
+
+       <div class="preview-bar reveal" style="--d:.05s">
+           <span class="preview-note">
+               Rows <b id="pgRange">1–50</b> of
+               <b>{{ "{:,}".format(total_rows) }}</b> ·
+               first <b>{{ preview_shown }}</b> loaded · {{ total_columns }} columns
+           </span>
+           <span class="preview-actions">
+               <a class="btn ghost" href="{{ url_for('dataset_csv') }}"
+                  target="_blank" rel="noopener">Open full CSV ↗</a>
+               <a class="btn" href="{{ url_for('dataset_csv', download=1) }}">Download CSV</a>
+           </span>
+       </div>
+
+       <div class="table-wrap preview-wrap reveal" style="--d:.1s">
+           <table class="preview-table">
+               <thead>
+                   <tr>
+                       {% for col in preview_columns %}<th>{{ col }}</th>{% endfor %}
+                   </tr>
+               </thead>
+               <tbody id="previewBody"></tbody>
+           </table>
+       </div>
+
+       <div class="preview-pager reveal" style="--d:.15s">
+           <button type="button" class="btn ghost sm" id="pgFirst">« First</button>
+           <button type="button" class="btn ghost sm" id="pgPrev">‹ Prev</button>
+           <span class="pager-info" id="pgInfo">Page 1</span>
+           <button type="button" class="btn ghost sm" id="pgNext">Next ›</button>
+           <button type="button" class="btn ghost sm" id="pgLast">Last »</button>
+       </div>
+
+       <script id="previewData" type="application/json">{{ preview_rows|tojson }}</script>
+       <script>
+       (function () {
+           var rows = JSON.parse(document.getElementById('previewData').textContent);
+           var body = document.getElementById('previewBody');
+           var perPage = 50;
+           var page = 0;
+           var pages = Math.max(Math.ceil(rows.length / perPage), 1);
+
+           function escapeHtml(value) {
+               return String(value).replace(/[&<>"]/g, function (ch) {
+                   return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+               });
+           }
+
+           function render() {
+               var start = page * perPage;
+               var end = Math.min(start + perPage, rows.length);
+               var html = '';
+               for (var i = start; i < end; i++) {
+                   html += '<tr>';
+                   for (var j = 0; j < rows[i].length; j++) {
+                       var cell = rows[i][j];
+                       html += '<td>' + escapeHtml(cell === null ? '' : cell) + '</td>';
+                   }
+                   html += '</tr>';
+               }
+               body.innerHTML = html;
+               document.getElementById('pgRange').textContent = (rows.length ? start + 1 : 0) + '–' + end;
+               document.getElementById('pgInfo').textContent = 'Page ' + (page + 1) + ' of ' + pages;
+               document.getElementById('pgFirst').disabled = (page === 0);
+               document.getElementById('pgPrev').disabled = (page === 0);
+               document.getElementById('pgNext').disabled = (page >= pages - 1);
+               document.getElementById('pgLast').disabled = (page >= pages - 1);
+           }
+
+           document.getElementById('pgFirst').addEventListener('click', function () { page = 0; render(); });
+           document.getElementById('pgPrev').addEventListener('click', function () { if (page > 0) { page--; render(); } });
+           document.getElementById('pgNext').addEventListener('click', function () { if (page < pages - 1) { page++; render(); } });
+           document.getElementById('pgLast').addEventListener('click', function () { page = pages - 1; render(); });
+
+           render();
+       })();
+       </script>
+
+   </div>
+</section>
+
+
+<section class="section" style="padding-top:0;">
+   <div class="wrap reveal">
+
+       <div class="section-title">
+           <span class="st-icon tint-mint">📖</span>
+           <div>
+               <h2>Column dictionary</h2>
+               <p>All {{ total_columns }} columns of the raw file, in the order they appear.</p>
+           </div>
+       </div>
+
+       <div class="table-wrap" style="margin-top:22px;">
+           <table>
+               <thead>
+                   <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+               </thead>
+               <tbody>
+                   <tr><td>StudentID</td><td>int</td><td>Unique student identifier (1 – 50,000)</td></tr>
+                   <tr><td>Gender</td><td>str</td><td>Male / Female</td></tr>
+                   <tr><td>City</td><td>str</td><td>10 cities — Ahmedabad, Bangalore, Chennai, Delhi, Hyderabad, Jaipur, Kochi, Kolkata, Mumbai, Pune</td></tr>
+                   <tr><td>CollegeTier</td><td>str</td><td>College band: Tier1 / Tier2 / Tier3</td></tr>
+                   <tr><td>Stream</td><td>str</td><td>CS / ECE / IT / Mechanical / Civil / EE</td></tr>
+                   <tr><td>Specialisation</td><td>str</td><td>Embedded / Networking / DataScience / AI</td></tr>
+                   <tr><td>Hostel</td><td>str</td><td>Stayed in hostel: Yes / No</td></tr>
+                   <tr><td>HistoryOfBacklogs</td><td>str</td><td>Any backlogs in the past: No / Yes</td></tr>
+                   <tr><td>SGPA_Sem1 … SGPA_Sem8</td><td>float</td><td>Semester GPA for each of the 8 semesters</td></tr>
+                   <tr><td>CGPA</td><td>float</td><td>Overall cumulative GPA</td></tr>
+                   <tr><td>AttendancePercent</td><td>float</td><td>Class attendance in percent</td></tr>
+                   <tr><td>Internships</td><td>int</td><td>Number of internships completed</td></tr>
+                   <tr><td>Projects</td><td>int</td><td>Number of academic / personal projects</td></tr>
+                   <tr><td>Workshops</td><td>int</td><td>Workshops attended — <b>4,488 nulls</b></td></tr>
+                   <tr><td>Certifications</td><td>int</td><td>Certifications earned</td></tr>
+                   <tr><td>Publications</td><td>int</td><td>Research publications</td></tr>
+                   <tr><td>AptitudeTestScore</td><td>float</td><td>Aptitude test score — <b>4,029 nulls</b></td></tr>
+                   <tr><td>SoftSkillsRating</td><td>float</td><td>Soft-skills rating — <b>3,526 nulls</b></td></tr>
+                   <tr><td>CodingTestScore</td><td>float</td><td>Coding test score — <b>2,976 nulls</b></td></tr>
+                   <tr><td>MockInterviewScore</td><td>float</td><td>Mock interview score — <b>4,957 nulls</b></td></tr>
+                   <tr><td>ExtraCurricular</td><td>int</td><td>Extra-curricular activities</td></tr>
+                   <tr><td>CGPA_Tier</td><td>str</td><td>CGPA band: Low / Mid / High — used as a 3-class target by AdaBoost</td></tr>
+                   <tr><td>Salary Package</td><td>float</td><td>Annual package in LPA — <b>above 0 for every placed student</b> (see the note on the Models page)</td></tr>
+                   <tr><td>IsAnomaly</td><td>int</td><td>Flag marking records detected as unusual</td></tr>
+                   <tr><td>PlacementStatus</td><td>int</td><td>1 = placed, 0 = not placed — <b>the target</b></td></tr>
+               </tbody>
+           </table>
+       </div>
+
+   </div>
+</section>
+
+
+<section class="section" style="padding-top:0;">
+   <div class="wrap grid grid-2">
+
+       <div class="card reveal">
+           <div class="icon-chip tint-mint">🔒</div>
+           <h3>Raw data stays untouched</h3>
+           <p>Every cleaning, scaling and encoding step works on a copy. The original
+               50,000-row CSV is never modified — a hard rule across all modules.</p>
+       </div>
+
+       <div class="card reveal" style="--d:.08s">
+           <div class="icon-chip tint-peach">➡️</div>
+           <h3>Feeds a fully numeric dataset</h3>
+           <p>The preprocessing pipeline turns these {{ total_columns }} mixed columns into
+              <b>final_preprocess_M2.csv</b>, a clean all-numeric matrix ready for
+              the {{ total_models }} models.</p>
+       </div>
+
+   </div>
+</section>
+
+
+{% endblock %}

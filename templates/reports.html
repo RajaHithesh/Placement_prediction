@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+
+{% block title %}Reports{% endblock %}
+
+
+{% block content %}
+
+
+<section class="page-head">
+   <div class="wrap">
+       <span class="eyebrow rise">Generated outputs</span>
+       <h1 class="rise" style="--d:.1s">Every chart, metric &amp; message — <span class="grad-text">all visible</span></h1>
+       <p class="lead rise" style="--d:.2s">
+           Nothing is hidden. Each module writes its results into its own folder under <b>outputs/</b>,
+           and this page shows <b>every chart</b> it produced, <b>every metric report and message</b> as a
+           readable table or text block, and the trained model / data files to download.
+       </p>
+   </div>
+</section>
+
+
+<section class="section" style="padding-top:8px;">
+   <div class="wrap">
+
+       <div class="reports-summary reveal">
+           <span class="rs-pill">📁 <b>{{ total_modules }}</b> modules</span>
+           <span class="rs-pill">🖼️ <b>{{ total_images }}</b> charts</span>
+           <span class="rs-pill">📄 <b>{{ total_messages }}</b> metric &amp; message files</span>
+           <span class="rs-pill">💾 <b>{{ total_downloads }}</b> model / data files</span>
+       </div>
+
+       {% for module in modules %}
+       <div class="section-title reveal" id="{{ module.name }}" style="margin-top:48px;">
+           <span class="st-icon tint-mint">{{ module.icon }}</span>
+           <div>
+               <h2>{{ module.title }}</h2>
+               <p>
+                   {{ module.blurb }}
+                   <span class="mt-meta">{{ module.n_images }} charts · {{ module.n_messages }} messages</span>
+               </p>
+           </div>
+       </div>
+
+       {% include "_module_outputs.html" %}
+       {% endfor %}
+
+   </div>
+</section>
+
+
+{% endblock %}

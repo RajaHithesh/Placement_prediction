@@ -1,0 +1,9 @@
+Cluster,Cluster_ID,Number_of_Records,Average_CGPA,Average_HistoryOfBacklogs,Average_Internships
+Cluster_0,0,19707,-0.02,0.0,-0.157
+Cluster_1,1,3598,-0.937,1.0,-1.386
+Cluster_2,2,11268,0.628,0.0,1.072
+Cluster_3,3,7475,-0.65,0.0,-1.386
+Cluster_4,4,810,0.458,1.0,1.072
+Cluster_5,5,4451,-0.35,1.0,-0.157
+Cluster_6,6,2443,0.988,0.0,2.301
+Cluster_7,7,248,1.276,1.0,2.301
